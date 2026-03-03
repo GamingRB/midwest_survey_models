@@ -1,0 +1,46 @@
+1)
+J'ai trouvé le fichier dans C:\Users\<user>\AppData\Local\Python\pythoncore-3.14-64\Lib\tmp. Il a été créé depuis le fichier transformers.py
+
+2) Il est possible de modifier des fichiers systèmes pour faire exécuter du code malveillant.
+
+3) La bibliothèque skops offre une sérialisation sécurisée des modèles scikit-learn.
+les avantages clés sont :
+
+la sécurité : Format verrouillé empêchant l'exécution de code arbitraire
+
+la transparence : Inspection du contenu avant chargement
+
+la portabilité : Compatibilité multi-environnements pour le partage
+
+voici un exemeple de code :
+
+import skops.io as sio
+import base64
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+
+# 1. Entraîner un modèle exemple
+X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+y = np.array([0, 1, 1, 0])
+clf = RandomForestClassifier(n_estimators=10).fit(X, y)
+
+# 2. Sérialiser en mémoire (bytes sécurisés)
+model_bytes = sio.dumps(clf)
+
+# 3. Encoder pour partage (ex: via API, email, DB)
+model_b64 = base64.b64encode(model_bytes).decode('utf-8')
+print("Modèle encodé (à partager):")
+print(model_b64[:100] + "...")  # Troncature pour exemple
+
+# 4. Recevoir et charger (simulation partage)
+received_b64 = model_b64  # Ici, reçu via réseau/DB
+received_bytes = base64.b64decode(received_b64)
+
+# Types de confiance (à inspecter avec sio.get_untrusted_types())
+trusted = {
+    "sklearn.ensemble._forest.RandomForestClassifier",
+    "sklearn.ensemble._forest.ExtraTreesClassifier"
+}
+
+clf_loaded = sio.loads(received_bytes, trusted=trusted)
+print("Prédiction chargée:", clf_loaded.predict([[0.5, 0.5]]))  # [1]
